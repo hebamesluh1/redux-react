@@ -1,34 +1,38 @@
-import React from 'react'
-import { useSelector } from 'react-redux'
-import { selectAllPosts } from '../../redux/posts';
+import { useSelector, useDispatch } from "react-redux";
+import { selectAllPosts, getPostsStatus, getPostsError, fetchPosts } from "../../redux/posts";
+import { useEffect } from "react";
+import PostExpert from "./PostExpert";
 import AddPostForm from './AddPostForm';
-import PostAuthor from './PostAuthor';
-import TimeAgo from './TimeAgo';
-import ReactionButtons from './ReactionButtons';
-const PostList = () => {
-    const posts = useSelector(selectAllPosts);
-    const orderedPosts = posts.slice().sort((a, b) => b.date.localeCompare(a.date))
 
-    const renderedPosts = orderedPosts.map(post => (
-        <article key={post.id}>
-            <h3>{post.title}</h3>
-            <p>{post.content.substring(0, 100)}</p>
-            <div className="postCredit">
-                <PostAuthor userId={post.userId}/>
-                <TimeAgo timestamp={post.date} />
-                <ReactionButtons post={post}/>
-            </div>
-        </article>
-    ))
+const PostsList = () => {
+    const dispatch = useDispatch();
+
+    const posts = useSelector(selectAllPosts);
+    const postStatus = useSelector(getPostsStatus);
+    const error = useSelector(getPostsError);
+
+    useEffect(() => {
+        if (postStatus === 'idle') {
+            dispatch(fetchPosts())
+        }
+    }, [postStatus, dispatch])
+
+    let content;
+    if (postStatus === 'loading') {
+        content = <p>"Loading..."</p>;
+    } else if (postStatus === 'succeeded') {
+        const orderedPosts = posts.slice().sort((a, b) => b.date.localeCompare(a.date))
+        content = orderedPosts.map(post => <PostExpert key={post.id} post={post} />)
+    } else if (postStatus === 'failed') {
+        content = <p>{error}</p>;
+    }
+
     return (
-        <div>
+        <section>
             <AddPostForm/>
-            <section>
-                <h2>Posts</h2>
-                {renderedPosts}
-            </section>
-        </div>
+            <h2>Posts</h2>
+            {content}
+        </section>
     )
 }
-
-export default PostList
+export default PostsList

@@ -9,6 +9,7 @@ const AddPostForm = () => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [usersId, setUsersId] = useState('');
+    const [addRequest,setAddRequest] = useState('');
 
     const users = useSelector(selectAllUsers);
     const dispatch = useDispatch();
@@ -17,26 +18,25 @@ const AddPostForm = () => {
     const onContentChange = e => setContent(e.target.value);
     const onAuthorChange = e => setUsersId(e.target.value);
 
+    const  canSave = [title, content, usersId].every(Boolean) && addRequest === 'idle';
+
     const onSavePostClicked = () => {
-        // first method 
-        // if(title&&content){
-        //     dispatch(
-        //         postAdd({
-        //             id:nanoid(),
-        //             title,
-        //             content
-        //         })
-        //     )
-        //     setTitle('');
-        //     setContent('');
-        // }
-        // second method 
-        if (title && content) {
-            dispatch(
-                postAdd(title, content, usersId))
+        if (canSave) {
+            try {
+                setAddRequest('pending')
+                dispatch(addNewPost({ title, body: content, userId })).unwrap()
+
+                setTitle('')
+                setContent('')
+                usersId('')
+            } catch (err) {
+                console.error('Failed to save the post', err)
+            } finally {
+                setAddRequest('idle')
+            }
         }
+
     }
-    const canSave = Boolean(title) && Boolean(content) && Boolean(usersId);
 
     const usersOption = users.map(user => (
         <option key={user.id} value={user.id}>
@@ -55,7 +55,7 @@ const AddPostForm = () => {
             </select>
             <label htmlFor="postContent">Content :</label>
             <textarea name="postContent" id="postContent" cols="30" rows="10" onChange={onContentChange} value={content}></textarea>
-            <button type='button' onClick={onSavePostClicked} disabled={!canSave}>Save Post</button>
+            <button type='button' onClick={onSavePostClicked} disabled={canSave}>Save Post</button>
         </form>
     )
 }
